@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product Hack Agent — Projuris</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1d4ed8;
+      --blue-light: #dbeafe;
+      --blue-dark: #1e3a8a;
+      --blue-mid: #3b82f6;
+      --white: #ffffff;
+      --bg: #f8faff;
+      --sidebar: #fafafa;
+      --border: #e4e4e7;
+      --text: #18181b;
+      --text-muted: #71717a;
+      --text-light: #a1a1aa;
+      --success: #16a34a;
+      --warning: #ca8a04;
+      --danger: #dc2626;
+      --radius-btn: 12px;
+      --radius-card: 20px;
+      --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 24px rgba(29,78,216,.12);
+    }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── PRODUCT SELECTOR ── */
+    #selector-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: linear-gradient(135deg, #f0f5ff 0%, #e8f0fe 50%, #f8faff 100%);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+
+    .selector-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 52px 48px;
+      max-width: 480px; width: 100%;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+
+    .selector-logo {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--blue); color: var(--white);
+      padding: 10px 18px; border-radius: var(--radius-btn);
+      font-size: 13px; font-weight: 700; letter-spacing: .5px;
+      margin-bottom: 32px;
+    }
+
+    .selector-logo svg { width: 16px; height: 16px; }
+
+    .selector-card h1 {
+      font-size: 26px; font-weight: 800; color: var(--text);
+      line-height: 1.2; margin-bottom: 10px;
+    }
+
+    .selector-card p {
+      font-size: 14px; color: var(--text-muted); margin-bottom: 36px;
+    }
+
+    .selector-label {
+      font-size: 11px; font-weight: 700; color: var(--text-light);
+      letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px;
+    }
+
+    .product-buttons {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .product-btn {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 22px; border-radius: var(--radius-btn);
+      border: 2px solid var(--border); background: var(--white);
+      cursor: pointer; text-align: left; transition: all .2s;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .product-btn:hover {
+      border-color: var(--blue); background: var(--blue-light);
+      transform: translateY(-1px); box-shadow: var(--shadow-md);
+    }
+
+    .product-btn-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--blue-light); display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; font-size: 18px;
+    }
+
+    .product-btn-info { flex: 1; }
+    .product-btn-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .product-btn-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .product-btn-arrow { color: var(--text-light); font-size: 20px; }
+
+    /* ── MAIN APP ── */
+    #app {
+      display: none;
+      height: 100vh;
+      flex-direction: row;
+    }
+
+    /* ── SIDEBAR ── */
+    aside {
+      width: 260px; min-width: 260px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 20px 16px;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo-icon {
+      width: 32px; height: 32px; background: var(--blue);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0;
+    }
+
+    .sidebar-logo-icon svg { width: 16px; height: 16px; fill: white; }
+
+    .sidebar-title { font-size: 13px; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .sidebar-subtitle { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+    .product-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--blue-light); color: var(--blue-dark);
+      border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 7px 12px; font-size: 12px; font-weight: 600;
+      margin-bottom: 24px; cursor: pointer;
+    }
+
+    .product-badge:hover { opacity: .8; }
+
+    .product-badge-dot {
+      width: 7px; height: 7px; background: var(--blue);
+      border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* PHASES */
+    .section-label {
+      font-size: 10px; font-weight: 700; color: var(--text-light);
+      letter-spacing: .8px; text-transform: uppercase;
+      margin-bottom: 8px; padding-left: 4px;
+    }
+
+    .phases { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+
+    .phase-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 10px;
+      font-size: 13px; font-weight: 500; color: var(--text-muted);
+      transition: all .2s;
+    }
+
+    .phase-item.active {
+      background: var(--blue-light); color: var(--blue-dark); font-weight: 600;
+    }
+
+    .phase-item.done {
+      color: var(--success);
+    }
+
+    .phase-num {
+      width: 22px; height: 22px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; flex-shrink: 0;
+      background: var(--border); color: var(--text-muted);
+      transition: all .2s;
+    }
+
+    .phase-item.active .phase-num { background: var(--blue); color: white; }
+    .phase-item.done .phase-num { background: #dcfce7; color: var(--success); }
+
+    /* SOURCES */
+    .sources { display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+
+    .source-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px; border-radius: 8px;
+      font-size: 12px; color: var(--text-muted);
+    }
+
+    .source-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    .source-dot.connected { background: var(--success); box-shadow: 0 0 0 2px #dcfce7; }
+    .source-dot.partial { background: var(--warning); box-shadow: 0 0 0 2px #fef9c3; }
+    .source-dot.offline { background: var(--border); }
+
+    .sidebar-spacer { flex: 1; }
+
+    .nova-sessao-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 11px; border-radius: var(--radius-btn);
+      border: 1.5px solid var(--border); background: var(--white);
+      cursor: pointer; font-family: 'Montserrat', sans-serif;
+      font-size: 13px; font-weight: 600; color: var(--text-muted);
+      transition: all .2s;
+    }
+
+    .nova-sessao-btn:hover {
+      border-color: var(--blue); color: var(--blue); background: var(--blue-light);
+    }
+
+    /* ── MAIN CHAT ── */
+    main {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--bg);
+    }
+
+    .chat-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .chat-header-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .chat-header-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+    #messages {
+      flex: 1; overflow-y: auto;
+      padding: 24px;
+      display: flex; flex-direction: column; gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    /* Message bubbles */
+    .msg {
+      display: flex; gap: 10px; align-items: flex-start;
+      animation: msgIn .25s ease;
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .msg.user { flex-direction: row-reverse; }
+
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+
+    .msg.agent .msg-avatar { background: var(--blue); }
+    .msg.user .msg-avatar { background: #f4f4f5; font-size: 13px; }
+
+    .msg-bubble {
+      max-width: 72%; padding: 14px 18px;
+      border-radius: 18px; font-size: 14px; line-height: 1.65;
+    }
+
+    .msg.agent .msg-bubble {
+      background: var(--white); border: 1px solid var(--border);
+      border-top-left-radius: 4px; box-shadow: var(--shadow);
+    }
+
+    .msg.user .msg-bubble {
+      background: var(--blue); color: white;
+      border-top-right-radius: 4px;
+    }
+
+    /* Markdown rendering inside agent bubbles */
+    .msg-bubble h2 {
+      font-size: 15px; font-weight: 700; color: var(--blue-dark);
+      margin: 16px 0 8px; padding-bottom: 4px;
+      border-bottom: 2px solid var(--blue-light);
+    }
+
+    .msg-bubble h3 {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin: 12px 0 6px;
+    }
+
+    .msg-bubble p { margin: 6px 0; }
+
+    .msg-bubble strong { font-weight: 700; color: var(--blue-dark); }
+
+    .msg-bubble ul, .msg-bubble ol {
+      padding-left: 18px; margin: 6px 0;
+    }
+
+    .msg-bubble li { margin: 4px 0; }
+
+    .msg-bubble code {
+      background: #f4f4f5; padding: 2px 6px; border-radius: 5px;
+      font-family: 'Courier New', monospace; font-size: 12px;
+      color: var(--blue-dark);
+    }
+
+    .msg-bubble pre {
+      background: #f4f4f5; border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px; margin: 10px 0;
+      overflow-x: auto;
+    }
+
+    .msg-bubble pre code {
+      background: none; padding: 0; font-size: 12px;
+      color: var(--text); font-family: 'Courier New', monospace;
+    }
+
+    .msg-bubble table {
+      width: 100%; border-collapse: collapse; margin: 10px 0;
+      font-size: 12px;
+    }
+
+    .msg-bubble th {
+      background: var(--blue-light); color: var(--blue-dark);
+      font-weight: 700; padding: 8px 12px; text-align: left;
+      border: 1px solid #bfdbfe;
+    }
+
+    .msg-bubble td {
+      padding: 7px 12px; border: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .msg-bubble tr:nth-child(even) td { background: #fafafa; }
+
+    .msg-bubble hr {
+      border: none; border-top: 2px solid var(--blue-light);
+      margin: 16px 0;
+    }
+
+    /* Checkboxes */
+    .msg-bubble .checkbox-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      margin: 4px 0;
+    }
+
+    .msg-bubble .checkbox-item input[type="checkbox"] {
+      margin-top: 2px; accent-color: var(--blue); flex-shrink: 0;
+    }
+
+    /* Searching indicator */
+    .searching-indicator {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; color: var(--blue); font-weight: 500;
+      padding: 10px 16px; background: var(--blue-light);
+      border-radius: 10px; margin-bottom: 8px;
+    }
+
+    .searching-dots span {
+      display: inline-block; width: 5px; height: 5px;
+      background: var(--blue); border-radius: 50%;
+      animation: dot-pulse 1.4s infinite;
+    }
+
+    .searching-dots span:nth-child(2) { animation-delay: .2s; }
+    .searching-dots span:nth-child(3) { animation-delay: .4s; }
+
+    @keyframes dot-pulse {
+      0%, 80%, 100% { transform: scale(.6); opacity: .5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Input area */
+    .input-area {
+      padding: 16px 24px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--white);
+    }
+
+    .input-wrapper {
+      display: flex; align-items: flex-end; gap: 10px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 12px 14px 12px 18px;
+      transition: border-color .2s;
+    }
+
+    .input-wrapper:focus-within { border-color: var(--blue); }
+
+    #user-input {
+      flex: 1; border: none; background: transparent; resize: none;
+      font-family: 'Montserrat', sans-serif; font-size: 14px;
+      color: var(--text); line-height: 1.5; max-height: 120px;
+      min-height: 22px; outline: none;
+    }
+
+    #user-input::placeholder { color: var(--text-light); }
+
+    .send-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--blue); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .15s;
+    }
+
+    .send-btn:hover { background: var(--blue-dark); transform: scale(1.05); }
+    .send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+    .send-btn svg { width: 16px; height: 16px; fill: white; }
+
+    .input-hint {
+      font-size: 11px; color: var(--text-light); margin-top: 8px;
+      text-align: center;
+    }
+
+    /* Welcome message */
+    .welcome {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; flex: 1; text-align: center;
+      padding: 40px;
+    }
+
+    .welcome-icon {
+      width: 64px; height: 64px; background: var(--blue-light);
+      border-radius: 20px; display: flex; align-items: center;
+      justify-content: center; margin-bottom: 20px; font-size: 28px;
+    }
+
+    .welcome h2 {
+      font-size: 20px; font-weight: 800; color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .welcome p {
+      font-size: 14px; color: var(--text-muted); max-width: 380px;
+      line-height: 1.6; margin-bottom: 24px;
+    }
+
+    .welcome-chips {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    }
+
+    .chip {
+      padding: 8px 14px; background: var(--white); border: 1.5px solid var(--border);
+      border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--text-muted);
+      cursor: pointer; transition: all .15s; font-family: 'Montserrat', sans-serif;
+    }
+
+    .chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+
+    /* Scrollbar */
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- ── PRODUCT SELECTOR ── -->
+<div id="selector-overlay">
+  <div class="selector-card">
+    <div class="selector-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      Product Hack Agent
+    </div>
+    <h1>Build it Day<br/>Projuris 2026</h1>
+    <p>Seu co-piloto para transformar hipóteses em experimentos validados com IA. Selecione o produto para começar.</p>
+    <p class="selector-label">Selecione o produto</p>
+    <div class="product-buttons">
+      <button class="product-btn" onclick="selectProduct('Projuris Empresas')">
+        <div class="product-btn-icon">🏢</div>
+        <div class="product-btn-info">
+          <div class="product-btn-name">Projuris Empresas</div>
+          <div class="product-btn-desc">Gestão jurídica corporativa — PJE</div>
+        </div>
+        <span class="product-btn-arrow">›</span>
+      </button>
+      <button class="product-btn" onclick="selectProduct('Projuris ADV')">
+        <div class="product-btn-icon">⚖️</div>
+        <div class="product-btn-info">
+          <div class="product-btn-name">Projuris ADV</div>
+          <div class="product-btn-desc">Gestão para advogados e escritórios</div>
+        </div>
+        <span class="product-btn-arrow">›</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-header">
+      <div class="sidebar-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="sidebar-title">Product Hack Agent</div>
+        <div class="sidebar-subtitle">Build it Day • Projuris</div>
+      </div>
+    </div>
+
+    <div class="product-badge" onclick="changeProduct()" title="Clique para trocar o produto">
+      <div class="product-badge-dot"></div>
+      <span id="sidebar-product">Projuris Empresas</span>
+    </div>
+
+    <div class="section-label">Fluxo</div>
+    <div class="phases">
+      <div class="phase-item" id="ph-1">
+        <div class="phase-num">1</div>
+        Pesquisa
+      </div>
+      <div class="phase-item" id="ph-2">
+        <div class="phase-num">2</div>
+        Diagnóstico
+      </div>
+      <div class="phase-item" id="ph-3">
+        <div class="phase-num">3</div>
+        Experimento
+      </div>
+      <div class="phase-item" id="ph-4">
+        <div class="phase-num">4</div>
+        Dossiê
+      </div>
+    </div>
+
+    <div class="section-label">Fontes</div>
+    <div class="sources">
+      <div class="source-item">
+        <div class="source-dot connected" id="dot-jira"></div>
+        <span id="label-jira">Jira — PJE</span>
+      </div>
+      <div class="source-item">
+        <div class="source-dot connected" id="dot-confluence"></div>
+        <span>Confluence</span>
+      </div>
+      <div class="source-item">
+        <div class="source-dot offline" id="dot-mixpanel"></div>
+        <span style="color:#a1a1aa">Mixpanel (manual)</span>
+      </div>
+    </div>
+
+    <div class="sidebar-spacer"></div>
+
+    <button class="nova-sessao-btn" onclick="novaSessao()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      Nova sessão
+    </button>
+  </aside>
+
+  <!-- CHAT MAIN -->
+  <main>
+    <div class="chat-header">
+      <div>
+        <div class="chat-header-title" id="chat-title">Product Hack Agent</div>
+        <div class="chat-header-sub">Jogue sua hipótese — o agente pesquisa e entrega o dossiê</div>
+      </div>
+    </div>
+
+    <div id="messages">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">🎱</div>
+        <h2>Pronto para o Build it Day</h2>
+        <p>Descreva sua hipótese de produto. O agente vai buscar evidências no Jira e Confluence, decidir o tipo de experimento e entregar um dossiê completo com prompt pronto para usar.</p>
+        <div class="welcome-chips">
+          <div class="chip" onclick="useChip(this)">Quero reduzir churn no contencioso</div>
+          <div class="chip" onclick="useChip(this)">Usuários não usam o relatório de audiências</div>
+          <div class="chip" onclick="useChip(this)">Onboarding demora muito e gera abandono</div>
+          <div class="chip" onclick="useChip(this)">Clientes pedem busca global no sistema</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          id="user-input"
+          placeholder="Descreva sua hipótese ou dor de produto..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+      <div class="input-hint">Enter para enviar · Shift+Enter para nova linha</div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // ── STATE ──
+  let selectedProduct = 'Projuris Empresas';
+  let messages = [];
+  let isLoading = false;
+  let currentPhase = 0;
+
+  // ── PRODUCT SELECTION ──
+  function selectProduct(product) {
+    selectedProduct = product;
+    document.getElementById('selector-overlay').style.display = 'none';
+    const app = document.getElementById('app');
+    app.style.display = 'flex';
+    document.getElementById('sidebar-product').textContent = product;
+    document.getElementById('chat-title').textContent = product;
+
+    // Update Jira label
+    const jiraLabel = product === 'Projuris ADV' ? 'Jira — ADV' : 'Jira — PJE';
+    document.getElementById('label-jira').textContent = jiraLabel;
+  }
+
+  function changeProduct() {
+    if (isLoading) return;
+    if (messages.length > 0 && !confirm('Trocar o produto vai iniciar uma nova sessão. Continuar?')) return;
+    document.getElementById('selector-overlay').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    messages = [];
+    document.getElementById('messages').innerHTML = `
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">🎱</div>
+        <h2>Pronto para o Build it Day</h2>
+        <p>Descreva sua hipótese de produto. O agente vai buscar evidências no Jira e Confluence, decidir o tipo de experimento e entregar um dossiê completo com prompt pronto para usar.</p>
+        <div class="welcome-chips">
+          <div class="chip" onclick="useChip(this)">Quero reduzir churn no contencioso</div>
+          <div class="chip" onclick="useChip(this)">Usuários não usam o relatório de audiências</div>
+          <div class="chip" onclick="useChip(this)">Onboarding demora muito e gera abandono</div>
+          <div class="chip" onclick="useChip(this)">Clientes pedem busca global no sistema</div>
+        </div>
+      </div>`;
+    resetPhases();
+  }
+
+  function novaSessao() {
+    if (isLoading) return;
+    if (messages.length === 0) return;
+    if (!confirm('Iniciar nova sessão?')) return;
+    messages = [];
+    document.getElementById('messages').innerHTML = `
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">🎱</div>
+        <h2>Pronto para o Build it Day</h2>
+        <p>Descreva sua hipótese de produto. O agente vai buscar evidências no Jira e Confluence, decidir o tipo de experimento e entregar um dossiê completo com prompt pronto para usar.</p>
+        <div class="welcome-chips">
+          <div class="chip" onclick="useChip(this)">Quero reduzir churn no contencioso</div>
+          <div class="chip" onclick="useChip(this)">Usuários não usam o relatório de audiências</div>
+          <div class="chip" onclick="useChip(this)">Onboarding demora muito e gera abandono</div>
+          <div class="chip" onclick="useChip(this)">Clientes pedem busca global no sistema</div>
+        </div>
+      </div>`;
+    resetPhases();
+  }
+
+  // ── PHASE MANAGEMENT ──
+  function resetPhases() {
+    currentPhase = 0;
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`ph-${i}`);
+      el.classList.remove('active', 'done');
+    }
+  }
+
+  function setPhase(n) {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`ph-${i}`);
+      if (i < n) { el.classList.add('done'); el.classList.remove('active'); }
+      else if (i === n) { el.classList.add('active'); el.classList.remove('done'); }
+      else { el.classList.remove('active', 'done'); }
+    }
+    currentPhase = n;
+  }
+
+  function detectPhaseFromText(text) {
+    const lower = text.toLowerCase();
+    if (lower.includes('dossiê') || lower.includes('próximos passos') || lower.includes('7️⃣')) return 4;
+    if (lower.includes('experimento recomendado') || lower.includes('4️⃣') || lower.includes('ferramenta ia')) return 3;
+    if (lower.includes('diagnóstico') || lower.includes('exploratório') || lower.includes('validativo') || lower.includes('2️⃣ evidências')) return 2;
+    if (lower.includes('buscando evidências') || lower.includes('🔍')) return 1;
+    return 0;
+  }
+
+  // ── MARKDOWN RENDERER ──
+  function renderMarkdown(text) {
+    let html = text
+      // Escape HTML except what we'll add
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Code blocks (``` ```)
+    html = html.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) => {
+      return `<pre><code>${code.trim()}</code></pre>`;
+    });
+
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Tables
+    html = html.replace(/(\|.+\|\n)+/g, (table) => {
+      const lines = table.trim().split('\n').filter(l => l.includes('|'));
+      const filtered = lines.filter(l => !/^\|[-:| ]+\|$/.test(l.trim()));
+      if (filtered.length < 2) return table;
+      const header = filtered[0];
+      const rows = filtered.slice(1);
+      const thCells = header.split('|').filter(c => c.trim() !== '').map(c => `<th>${c.trim()}</th>`).join('');
+      const bodyRows = rows.map(r => {
+        const cells = r.split('|').filter(c => c.trim() !== '').map(c => `<td>${c.trim()}</td>`).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+      return `<table><thead><tr>${thCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+    });
+
+    // Horizontal rule
+    html = html.replace(/^---+$/gm, '<hr>');
+
+    // H2 headers
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+    // H3 headers
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+
+    // Bold
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+    // Italic
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Checkboxes [ ] and [x]
+    html = html.replace(/^- \[x\] (.+)$/gim, '<div class="checkbox-item"><input type="checkbox" checked disabled> <span>$1</span></div>');
+    html = html.replace(/^- \[ \] (.+)$/gim, '<div class="checkbox-item"><input type="checkbox" disabled> <span>$1</span></div>');
+
+    // Unordered lists
+    html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+
+    // Paragraphs (double newline)
+    html = html.replace(/\n\n+/g, '</p><p>');
+    html = html.replace(/\n/g, '<br>');
+
+    // Wrap in paragraph if needed
+    if (!html.startsWith('<')) html = `<p>${html}</p>`;
+
+    return html;
+  }
+
+  // ── CHAT LOGIC ──
+  function removeWelcome() {
+    const w = document.getElementById('welcome-screen');
+    if (w) w.remove();
+  }
+
+  function addMessage(role, content, isStreaming = false) {
+    removeWelcome();
+    const container = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = role === 'agent' ? '⚡' : '👤';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+
+    if (role === 'agent' && !isStreaming) {
+      bubble.innerHTML = renderMarkdown(content);
+    } else {
+      bubble.textContent = content;
+    }
+
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+
+    return bubble;
+  }
+
+  function addSearchingIndicator() {
+    removeWelcome();
+    const container = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.id = 'searching-ind';
+    div.className = 'msg agent';
+    div.innerHTML = `
+      <div class="msg-avatar">⚡</div>
+      <div class="msg-bubble" style="padding:10px 16px">
+        <div class="searching-indicator">
+          🔍 Buscando evidências nos sistemas...
+          <div class="searching-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function removeSearchingIndicator() {
+    const el = document.getElementById('searching-ind');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    if (isLoading) return;
+    const input = document.getElementById('user-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    autoResize(input);
+    isLoading = true;
+    document.getElementById('send-btn').disabled = true;
+
+    // Add user message
+    addMessage('user', text);
+    messages.push({ role: 'user', content: text });
+
+    // Show searching indicator
+    addSearchingIndicator();
+    setPhase(1);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, product: selectedProduct }),
+      });
+
+      if (!response.ok) {
+        removeSearchingIndicator();
+        const errData = await response.json().catch(() => ({}));
+        addMessage('agent', `❌ Erro: ${errData.error || response.statusText}`);
+        isLoading = false;
+        document.getElementById('send-btn').disabled = false;
+        return;
+      }
+
+      // Start streaming
+      removeSearchingIndicator();
+      const bubble = addMessage('agent', '', true);
+      let fullText = '';
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const data = line.slice(6).trim();
+          if (data === '[DONE]' || data === '') continue;
+
+          try {
+            const evt = JSON.parse(data);
+            if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+              fullText += evt.delta.text;
+              bubble.innerHTML = renderMarkdown(fullText);
+              document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+
+              // Phase detection
+              const detectedPhase = detectPhaseFromText(fullText);
+              if (detectedPhase > currentPhase) setPhase(detectedPhase);
+            }
+          } catch {
+            // Not valid JSON, skip
+          }
+        }
+      }
+
+      // Final render
+      bubble.innerHTML = renderMarkdown(fullText);
+      messages.push({ role: 'assistant', content: fullText });
+
+      // Ensure we land on dossiê phase at the end
+      if (fullText.toLowerCase().includes('dossiê') || fullText.toLowerCase().includes('próximos passos')) {
+        setPhase(4);
+      }
+
+    } catch (err) {
+      removeSearchingIndicator();
+      addMessage('agent', `❌ Erro de conexão: ${err.message}`);
+    } finally {
+      isLoading = false;
+      document.getElementById('send-btn').disabled = false;
+    }
+  }
+
+  // ── INPUT HELPERS ──
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function useChip(el) {
+    const input = document.getElementById('user-input');
+    input.value = el.textContent;
+    autoResize(input);
+    input.focus();
+  }
+</script>
+
+</body>
+</html>
